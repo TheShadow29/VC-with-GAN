@@ -1,0 +1,6 @@
+Week of Aug29-Sep5:
+On paper architecture for :
+> Feature extraction
+> VAE
+> Decoder
+[Links and Code as much as possible]
