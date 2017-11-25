@@ -6,6 +6,7 @@ import tensorflow as tf
 # from util.image import make_png_jet_thumbnail, make_png_thumbnail
 from trainer.gan import GANTrainer
 
+
 class VAETrainer(GANTrainer):
     def _optimize(self):
         '''
@@ -109,7 +110,6 @@ class VAETrainer(GANTrainer):
                 #         mode='wb',
                 #     ) as fp:
                 #         fp.write(xh)
-
 
 
 class VAWGANTrainer(GANTrainer):

@@ -5,7 +5,7 @@ import tensorflow as tf
 import numpy as np
 
 from analyzer import read, Tanhize
-from util.wrapper import save, validate_log_dirs #, load, configure_gpu_settings, restore_global_step
+from util.wrapper import save, validate_log_dirs
 from importlib import import_module
 
 args = tf.app.flags.FLAGS
@@ -34,14 +34,15 @@ if args.model is None or args.trainer is None:
         '\n  Use `python main.py --help` to see applicable options.'
     )
 
-module = import_module(args.model_module, package=None)
-MODEL = getattr(module, args.model)
+model_module = import_module(args.model_module, package=None)
+MODEL = getattr(model_module, args.model)
 
-module = import_module(args.trainer_module, package=None)
-TRAINER = getattr(module, args.trainer)
+trainer_module = import_module(args.trainer_module, package=None)
+TRAINER = getattr(trainer_module, args.trainer)
+
 
 def main():
-    ''' NOTE: The input is rescaled to [-1, 1] '''
+    """ NOTE: The input is rescaled to [-1, 1] """
 
     dirs = validate_log_dirs(args)
     tf.gfile.MakeDirs(dirs['logdir'])

@@ -5,10 +5,10 @@ from util.layers import (GaussianKLD, GaussianLogDensity, GaussianSampleLayer,
                          Layernorm, conv2d_nchw_layernorm, lrelu)
 
 
-class ConvVAE(object):
+class VAWGAN(object):
     def __init__(self, arch, is_training=False):
         '''
-        Variational auto-encoder implemented in 2D convolutional neural nets
+        Variational auto-encoder with WGAN implemented in 2D convolutional neural nets
         Input:
             `arch`: network architecture (`dict`)
             `is_training`: (unused now) it was kept for historical reasons (for `BatchNorm`)
@@ -30,6 +30,10 @@ class ConvVAE(object):
         self._encode = tf.make_template(
             'Encoder',
             self._encoder)
+
+        self._discriminate = tf.make_template(
+            'Discriminator',
+            self._discriminator)
 
         self.generate = self.decode  # for VAE-GAN extension
 
@@ -98,6 +102,17 @@ class ConvVAE(object):
                 x = lrelu(x)
         return x
 
+    def _discriminator(self, x, is_training=None):
+        net = self.arch['discriminator']
+        for i, (o, k, s) in enumerate(zip(net['output'], net['kernel'], net['stride'])):
+            x = conv2d_nchw_layernorm(
+                x, o, k, s, lrelu,
+                name='Conv2d-{}'.format(i)
+            )
+        x = slim.flatten(x)
+        d = tf.layers.dense(x, 1)
+        return d
+
     def loss(self, x, y):
         with tf.name_scope('loss'):
             z_mu, z_lv = self._encode(x)
@@ -112,6 +127,7 @@ class ConvVAE(object):
                     slim.flatten(tf.zeros_like(z_lv)),
                 )
             )
+
             logPx = tf.reduce_mean(
                 GaussianLogDensity(
                     slim.flatten(x),
@@ -119,13 +135,37 @@ class ConvVAE(object):
                     tf.zeros_like(slim.flatten(xh))),
             )
 
+            dx = self._discriminate(x)
+            dxh = self._discriminate(xh)
+            W_dist = tf.reduce_mean(dx - dxh)
+            g_loss = tf.reduce_mean(-dxh)
+
+            batch_size = self.arch['training']['batch_size']
+            lam = self.arch['training']['lambda']
+
+            alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
+            alpha = alpha_dist.sample((batch_size, 1, 1, 1))
+            interpolated = x + alpha * (xh - x)
+            inte_logit = self._discriminate(interpolated)
+            gradients = tf.gradients(inte_logit, [interpolated, ])[0]
+            grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
+            gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
+            gp = lam * gradient_penalty
+
         loss = dict()
-        loss['G'] = - logPx + D_KL
+        alpha = self.arch['training']['alpha']
+        loss['l_E'] = -logPx + D_KL
         loss['D_KL'] = D_KL
         loss['logP'] = logPx
+        loss['l_D'] = -W_dist + gp
+        loss['l_G'] = -logPx + alpha * g_loss
+        loss['W_dist'] = W_dist
+        loss['gp'] = gp
 
         tf.summary.scalar('KL-div', D_KL)
         tf.summary.scalar('logPx', logPx)
+        tf.summary.scalar('W_dist', W_dist)
+        tf.summary.scalar("gp_loss", gradient_penalty)
 
         tf.summary.histogram('xh', xh)
         tf.summary.histogram('x', x)
@@ -138,3 +178,7 @@ class ConvVAE(object):
     def decode(self, z, y):
         xh = self._generate(z, y)
         return nchw_to_nhwc(xh)
+
+    def discriminate(self, x):
+        dw = self._discriminate(x)
+        return dw

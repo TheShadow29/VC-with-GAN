@@ -13,21 +13,21 @@ from importlib import import_module
 
 args = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('checkpoint', None, 'root of log dir')
-tf.app.flags.DEFINE_string('src', 'SF1', 'source speaker [SF1 - SM2]')
-tf.app.flags.DEFINE_string('trg', 'TM3', 'target speaker [SF1 - TM3]')
+tf.app.flags.DEFINE_string('src', 'VCC2SF1', 'source speaker [VCC2SF1 - VCC2SM4]')
+tf.app.flags.DEFINE_string('trg', 'VCC2TM1', 'target speaker [VCC2SF1 - VCC2TM2]')
 tf.app.flags.DEFINE_string('output_dir', './logdir', 'root of output dir')
 tf.app.flags.DEFINE_string('module', 'model.vae', 'Module')
 tf.app.flags.DEFINE_string('model', None, 'Model')
-tf.app.flags.DEFINE_string('file_pattern', './dataset/vcc2016/bin/Testing Set/{}/*.bin', 'file pattern')
+tf.app.flags.DEFINE_string('file_pattern', './dataset/vcc2018/bin/Training Set/{}/*.bin', 'file pattern')
 
 if args.model is None:
     raise ValueError(
-        '\n  You MUST specify `model`.' +\
+        '\n  You MUST specify `model`.' +
         '\n    Use `python convert.py --help` to see applicable options.'
     )
 
-module = import_module(args.module, package=None)
-MODEL = getattr(module, args.model)
+model_module = import_module(args.module, package=None)
+MODEL = getattr(model_module, args.model)
 
 FS = 16000
 
@@ -36,30 +36,32 @@ def make_output_wav_name(output_dir, filename):
     basename = str(filename, 'utf8')
     basename = os.path.split(basename)[-1]
     basename = os.path.splitext(basename)[0]
-    print('Processing {}'.format(basename))        
+    print('Processing {}'.format(basename))
     return os.path.join(
-        output_dir, 
+        output_dir,
         '{}-{}-{}.wav'.format(args.src, args.trg, basename)
     )
+
 
 def get_default_output(logdir_root):
     STARTED_DATESTRING = datetime.now().strftime('%0m%0d-%0H%0M-%0S-%Y')
     logdir = os.path.join(logdir_root, 'output', STARTED_DATESTRING)
-    print('Using default logdir: {}'.format(logdir))        
+    print('Using default logdir: {}'.format(logdir))
     return logdir
+
 
 def convert_f0(f0, src, trg):
     mu_s, std_s = np.fromfile(os.path.join('./etc', '{}.npf'.format(src)), np.float32)
     mu_t, std_t = np.fromfile(os.path.join('./etc', '{}.npf'.format(trg)), np.float32)
     lf0 = tf.where(f0 > 1., tf.log(f0), f0)
-    lf0 = tf.where(lf0 > 1., (lf0 - mu_s)/std_s * std_t + mu_t, lf0)
+    lf0 = tf.where(lf0 > 1., (lf0 - mu_s) / std_s * std_t + mu_t, lf0)
     lf0 = tf.where(lf0 > 1., tf.exp(lf0), lf0)
     return lf0
 
 
 def nh_to_nchw(x):
     with tf.name_scope('NH_to_NCHW'):
-        x = tf.expand_dims(x, 1)      # [b, h] => [b, c=1, h]
+        x = tf.expand_dims(x, 1)  # [b, h] => [b, c=1, h]
         return tf.expand_dims(x, -1)  # => [b, c=1, h, w=1]
 
 
@@ -79,8 +81,8 @@ def main():
     x = normalizer.forward_process(features['sp'])
     x = nh_to_nchw(x)
     y_s = features['speaker']
-    y_t_id = tf.placeholder(dtype=tf.int64, shape=[1,])
-    y_t = y_t_id * tf.ones(shape=[tf.shape(x)[0],], dtype=tf.int64)
+    y_t_id = tf.placeholder(dtype=tf.int64, shape=[1, ])
+    y_t = y_t_id * tf.ones(shape=[tf.shape(x)[0], ], dtype=tf.int64)
 
     machine = MODEL(arch)
     z = machine.encode(x)
@@ -114,6 +116,7 @@ def main():
                 sf.write(oFilename, y, FS)
             except:
                 break
+
 
 if __name__ == '__main__':
     main()
