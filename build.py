@@ -4,11 +4,10 @@ import soundfile as sf
 import tensorflow as tf
 from analyzer import SPEAKERS, pw2wav, read, read_whole_features
 
-
 args = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string(
     'train_file_pattern',
-    './dataset/vcc2016/bin/Training Set/*/*.bin',
+    './dataset/vcc2018/bin/Training Set/*/*.bin',
     'training dir (to *.bin)')
 
 
@@ -36,7 +35,6 @@ def main():
     y_all = np.concatenate(y_all, axis=0)
     f0_all = np.concatenate(f0_all, axis=0)
 
-
     # ==== F0 stats ====
     for s in SPEAKERS:
         print('Speaker {}'.format(s), flush=True)
@@ -49,7 +47,6 @@ def main():
         # Save as `float32`
         with open('./etc/{}.npf'.format(s), 'wb') as fp:
             fp.write(np.asarray([mu, std]).tostring())
-
 
     # ==== Min/Max value ====
     # mu = x_all.mean(0)
@@ -65,32 +62,29 @@ def main():
         fp.write(q995.tostring())
 
 
-
 def test():
     # ==== Test: batch mixer (conclusion: capacity should be larger to make sure good mixing) ====
-    x, y = read('./dataset/vcc2016/bin/*/*/1*001.bin', 32, min_after_dequeue=1024, capacity=2048)
+    x, y = read('./dataset/vcc2018/bin/*/*/1*001.bin', 32, min_after_dequeue=1024, capacity=2048)
     sv = tf.train.Supervisor()
     with sv.managed_session() as sess:
         for _ in range(200):
             x_, y_ = sess.run([x, y])
             print(y_)
 
-
     # ===== Read binary ====
-    features = read_whole_features('./dataset/vcc2016/bin/Training Set/SF1/*001.bin')
+    features = read_whole_features('./dataset/vcc2018/bin/Training Set/VCC2SF1/*001.bin')
 
     sv = tf.train.Supervisor()
     with sv.managed_session() as sess:
         features = sess.run(features)
 
     y = pw2wav(features)
-    sf.write('test1.wav', y, 16000)  # TODO fs should be specified externally.
-
+    sf.write('test1.wav', y, 16000)
 
     # ==== Direct read =====
-    f = './dataset/vcc2016/bin/Training Set/SF1/100001.bin'
+    f = './dataset/vcc2018/bin/Training Set/VCC2SF1/100001.bin'
     features = np.fromfile(f, np.float32)
-    features = np.reshape(features, [-1, 513*2 + 1 + 1 + 1]) # f0, en, spk
+    features = np.reshape(features, [-1, 513 * 2 + 1 + 1 + 1])  # f0, en, spk
 
     y = pw2wav(features)
     sf.write('test2.wav', y, 16000)

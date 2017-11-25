@@ -9,6 +9,7 @@ CS 753 ASR project
 ```bash
 python main.py \
 --model VAWGAN \
+--model_module model.vawgan \
 --trainer VAWGANTrainer \
 --architecture architecture-vawgan-vcc2016.json
 ```  
@@ -16,12 +17,13 @@ python main.py \
 6. To convert the voice, run
 ```bash
 python convert.py \
---src SF1 \
---trg TM3 \
+--src VCC2SF1 \
+--trg VCC2TM1 \
 --model VAWGAN \
+--model_module model.vawgan \
 --checkpoint logdir/train/[timestamp]/[model.ckpt-[id]] \
 --file_pattern "./dataset/vcc2016/bin/Testing Set/{}/*.bin"
 ```  
-*Please fill in `timestampe` and `model id`.  
+*Please fill in `timestamp` and `model id`.  
 7. You can find the converted wav files in `./logdir/output/[timestamp]`  
 

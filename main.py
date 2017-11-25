@@ -6,6 +6,7 @@ import numpy as np
 
 from analyzer import read_all, Tanhize
 # load, configure_gpu_settings, restore_global_step
+# from analyzer import read, Tanhize
 from util.wrapper import save, validate_log_dirs
 from importlib import import_module
 
@@ -48,7 +49,7 @@ TRAINER = getattr(module, args.trainer)
 
 
 def main():
-    ''' NOTE: The input is rescaled to [-1, 1] '''
+    """ NOTE: The input is rescaled to [-1, 1] """
 
     # dirs = validate_log_dirs(args)
     # tf.gfile.MakeDirs(dirs['logdir'])

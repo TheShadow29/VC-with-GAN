@@ -10,13 +10,13 @@ from tensorflow.python import debug as tf_debug
 import pdb
 
 args = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string('dir_to_wav', './dataset/vcc2016/wav', 'Dir to *.wav')
-tf.app.flags.DEFINE_string('dir_to_bin', './dataset/vcc2016/bin', 'Dir to output *.bin')
+tf.app.flags.DEFINE_string('dir_to_wav', './dataset/vcc2018/wav', 'Dir to *.wav')
+tf.app.flags.DEFINE_string('dir_to_bin', './dataset/vcc2018/bin', 'Dir to output *.bin')
 tf.app.flags.DEFINE_integer('fs', 16000, 'Global sampling frequency')
 tf.app.flags.DEFINE_float('f0_ceil', 500, 'Global f0 ceiling')
 
 EPSILON = 1e-10
-SETS = ['Training Set', 'Testing Set']  # TODO: for VCC2016 only
+SETS = ['Training Set']
 SPEAKERS = [s.strip() for s in tf.gfile.GFile('./etc/speakers.tsv', 'r').readlines()]
 FFT_SIZE = 1024
 SP_DIM = FFT_SIZE // 2 + 1
@@ -25,7 +25,7 @@ RECORD_BYTES = FEAT_DIM * 4  # all features saved in `float32`
 
 
 def wav2pw(x, fs=16000, fft_size=FFT_SIZE):
-    ''' Extract WORLD feature from waveform '''
+    """ Extract WORLD feature from waveform """
     _f0, t = pw.dio(x, fs, f0_ceil=args.f0_ceil)  # raw pitch extractor
     f0 = pw.stonemask(x, _f0, t, fs)  # pitch refinement
     sp = pw.cheaptrick(x, f0, t, fs, fft_size=fft_size)
@@ -38,7 +38,7 @@ def wav2pw(x, fs=16000, fft_size=FFT_SIZE):
 
 
 def extract(filename, fft_size=FFT_SIZE, dtype=np.float32):
-    ''' Basic (WORLD) feature extraction '''
+    """ Basic (WORLD) feature extraction """
     x, _ = librosa.load(filename, sr=args.fs, mono=True, dtype=np.float64)
     features = wav2pw(x, args.fs, fft_size=fft_size)
     ap = features['ap']
@@ -75,7 +75,7 @@ def extract_and_save_bin_to(dir_to_bin, dir_to_source):
 
 
 class Tanhize(object):
-    ''' Normalizing `x` to [-1, 1] '''
+    """ Normalizing `x` to [-1, 1] """
 
     def __init__(self, xmin, xmax):
         self.xmin = xmin
@@ -100,12 +100,15 @@ def read(
         format='NCHW',
         normalizer=None,
 ):
-    '''
+    """
     Read only `sp` and `speaker`
+
+    Read only `sp` and `speaker`
+
     Return:
         `feature`: [b, c]
         `speaker`: [b,]
-    '''
+    """
     with tf.name_scope('InputSpectralFrame'):
         files = tf.gfile.Glob(file_pattern)
         filename_queue = tf.train.string_input_producer(files)
@@ -190,10 +193,10 @@ def read_all(
 
 
 def read_whole_features(file_pattern, num_epochs=1):
-    '''
+    """
     Return
         `feature`: `dict` whose keys are `sp`, `ap`, `f0`, `en`, `speaker`
-    '''
+    """
     files = tf.gfile.Glob(file_pattern)
     print('{} files found'.format(len(files)))
     filename_queue = tf.train.string_input_producer(files, num_epochs=num_epochs)
