@@ -5,6 +5,9 @@ import librosa
 import numpy as np
 import pyworld as pw
 import tensorflow as tf
+from tensorflow.python import debug as tf_debug
+
+import pdb
 
 args = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('dir_to_wav', './dataset/vcc2016/wav', 'Dir to *.wav')
@@ -97,8 +100,8 @@ def read(
         format='NCHW',
         normalizer=None,
 ):
-    ''' 
-    Read only `sp` and `speaker` 
+    '''
+    Read only `sp` and `speaker`
     Return:
         `feature`: [b, c]
         `speaker`: [b,]
@@ -126,6 +129,58 @@ def read(
         speaker = tf.cast(value[-1], tf.int64)
         return tf.train.shuffle_batch(
             [feature, speaker],
+            batch_size,
+            capacity=capacity,
+            min_after_dequeue=min_after_dequeue,
+            num_threads=num_threads,
+            # enqueue_many=True,
+        )
+
+
+def read_all(
+        file_pattern,
+        batch_size,
+        record_bytes=RECORD_BYTES,
+        capacity=256,
+        min_after_dequeue=128,
+        num_threads=8,
+        format='NCHW',
+        normalizer=None,
+):
+    '''
+    Read only `sp` and `speaker`
+    Return:
+        `feature`: [b, c]
+        `speaker`: [b,]
+    '''
+    with tf.name_scope('InputSpectralFrame'):
+        files = tf.gfile.Glob(file_pattern)
+        filename_queue = tf.train.string_input_producer(files)
+
+        reader = tf.FixedLengthRecordReader(record_bytes)
+        _, value = reader.read(filename_queue)
+        value = tf.decode_raw(value, tf.float32)
+
+        value = tf.reshape(value, [FEAT_DIM, ])
+        feature = value[:SP_DIM]  # NCHW format
+
+        if normalizer is not None:
+            feature = normalizer.forward_process(feature)
+
+        if format == 'NCHW':
+            feature = tf.reshape(feature, [1, SP_DIM, 1])
+        elif format == 'NHWC':
+            feature = tf.reshape(feature, [SP_DIM, 1, 1])
+        else:
+            pass
+        speaker = tf.cast(value[-1], tf.int64)
+        text_emb = tf.random_uniform(shape=(300,))
+        # print(value)
+        # pdb.set_trace()
+        # pdb.set_trace()
+        # tf_debug.LocalCLIDebugWrapperSession(sess)
+        return tf.train.shuffle_batch(
+            [feature, speaker, text_emb],
             batch_size,
             capacity=capacity,
             min_after_dequeue=min_after_dequeue,

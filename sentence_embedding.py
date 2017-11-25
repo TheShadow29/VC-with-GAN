@@ -4,11 +4,13 @@ import pandas as pd
 import numpy as np
 import pdb
 import pickle
+import os
+
 
 class Sentence_Embedding(object):
     """docstring for Sentence_Embedding"""
     def __init__(self, freq_file, wvec_file):
-        self.freqs = pd.read_csv(freq_file, sep=",")
+        # self.freqs = pd.read_csv(freq_file, sep=",")
         self.wvec_file = wvec_file
         self.w_vec_dict = dict()
         self.w_prob_dict = dict()
@@ -17,7 +19,7 @@ class Sentence_Embedding(object):
         # self.prune_word_vec()
         self.a = 1e-3
         # self.wvec_file = pd.read_csv(wvec_file, sep=" ", header=None, usecols=[0])
-        
+
     def embed_sent(self, sentences):
         tot_sent = len(sentences)
         self.sent_vec = np.zeros((tot_sent, 300))
@@ -35,22 +37,30 @@ class Sentence_Embedding(object):
         return
 
     def get_w_vec(self, w):
-        return  self.w_vec_dict[w.lower()]
+        try:
+            return self.w_vec_dict[w.lower()]
+        except KeyError:
+            return self.w_vec_dict['<unk>']
 
     def get_w_prob(self, w):
-        return self.w_prob_dict[w.lower()]
+        try:
+            return self.w_prob_dict[w.lower()]
+        except KeyError:
+            return self.w_prob_dict['<unk>']
 
     def create_w_prob_dict(self):
         # self.w_prob_dict = dict(zip(list(self.freqs['Word']), list(self.freqs['Probability'])))''
         inp_dict = open('./data/w_prob_dict.pkl', 'rb')
         self.w_prob_dict = pickle.load(inp_dict)
         inp_dict.close()
+        self.w_prob_dict['<unk>'] = 0
         return
 
     def get_w_vec_dict(self):
         inp_dict = open('./data/w_vec_dict.pkl', 'rb')
         self.w_vec_dict = pickle.load(inp_dict)
         inp_dict.close()
+        self.w_vec_dict['<unk>'] = np.zeros(300)
         return
 
     def prune_word_vec(self):
@@ -67,6 +77,7 @@ class Sentence_Embedding(object):
         pickle.dump(self.w_vec_dict, out_f)
         out_f.close()
         return
+
 
 def get_word_prob_from_corpus(fname):
     out_dict = dict()
@@ -89,11 +100,26 @@ def get_word_prob_from_corpus(fname):
     out_f.close()
     return out_dict
 
+
+def scrape_sentences():
+    # doing only the hub part
+    top_dir = './data/vcc2018_training/Transcriptions/HUB/'
+    sentences = []
+    for fname in os.listdir(top_dir)[2:]:
+        with open(top_dir + fname, 'r') as f:
+            sent = f.readline().split()
+            sent = ' '.join(sent)
+            sentences.append(sent)
+    return sentences
+
+
 if __name__ == '__main__':
     freq_file = './data/word_freqencies.csv'
     wvec_file = './data/wiki_new.csv'
-    sentences = []
-    sentences.append('How are you')
-    sentences.append('I am fine')
-    sentences.append('I am good')
+    sentences = scrape_sentences()
+    print(sentences[:3])
+    # sentences.append('How are you')
+    # sentences.append('I am fine')
+    # sentences.append('I am good')
     s = Sentence_Embedding(freq_file, wvec_file)
+    s.embed_sent(sentences)

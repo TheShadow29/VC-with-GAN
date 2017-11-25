@@ -4,15 +4,16 @@ import json
 import tensorflow as tf
 import numpy as np
 
-from analyzer import read, Tanhize
-from util.wrapper import save, validate_log_dirs #, load, configure_gpu_settings, restore_global_step
+from analyzer import read_all, Tanhize
+# load, configure_gpu_settings, restore_global_step
+from util.wrapper import save, validate_log_dirs
 from importlib import import_module
 
 args = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string(
     'logdir_root', None, 'root of log dir')
 tf.app.flags.DEFINE_string(
-    'logdir', None, 'log dir')
+    'logdir', 'logdir', 'log dir')
 tf.app.flags.DEFINE_string(
     'restore_from', None, 'restore from dir (not from *.ckpt)')
 tf.app.flags.DEFINE_string('gpu_cfg', None, 'GPU configuration')
@@ -30,22 +31,29 @@ tf.app.flags.DEFINE_string('trainer', None, 'Trainer: VAETrainer, VAWGANTrainer'
 
 if args.model is None or args.trainer is None:
     raise ValueError(
-        '\n  Both `model` and `trainer` should be assigned.' +\
+        '\n  Both `model` and `trainer` should be assigned.' +
         '\n  Use `python main.py --help` to see applicable options.'
     )
 
+# print(args.model_module)
 module = import_module(args.model_module, package=None)
 MODEL = getattr(module, args.model)
 
 module = import_module(args.trainer_module, package=None)
 TRAINER = getattr(module, args.trainer)
+# print(args.model_module)
+
+# MODEL = model.vae.VAWGAN
+# TRAINER = trainer.vae.VAWGANTrainer
+
 
 def main():
     ''' NOTE: The input is rescaled to [-1, 1] '''
 
-    dirs = validate_log_dirs(args)
-    tf.gfile.MakeDirs(dirs['logdir'])
-
+    # dirs = validate_log_dirs(args)
+    # tf.gfile.MakeDirs(dirs['logdir'])
+    dirs = dict()
+    dirs['logdir'] = '.'
     with open(args.architecture) as f:
         arch = json.load(f)
 
@@ -57,7 +65,7 @@ def main():
         xmin=np.fromfile('./etc/xmin.npf'),
     )
 
-    image, label = read(
+    image, label, text_emb = read_all(
         file_pattern=arch['training']['datadir'],
         batch_size=arch['training']['batch_size'],
         capacity=2048,
@@ -67,7 +75,7 @@ def main():
 
     machine = MODEL(arch)
 
-    loss = machine.loss(image, label)
+    loss = machine.loss(image, label, text_emb)
     trainer = TRAINER(loss, arch, args, dirs)
     trainer.train(nIter=arch['training']['max_iter'], machine=machine)
 
