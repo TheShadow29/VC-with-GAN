@@ -113,7 +113,8 @@ def get_w_prob_from_csv(fname):
 
 def scrape_sentences():
     # doing only the hub part
-    top_dir = './data/vcc2018_training/Transcriptions/'
+    # top_dir = './data/vcc2018_training/Transcriptions/'
+    top_dir = './dataset/vcc2018/wav/Training Set/Transcriptions/'
     # sentences = dict()
     sub_dir = [top_dir + 'HUB/', top_dir + 'SPOKE/']
     sentences = []
