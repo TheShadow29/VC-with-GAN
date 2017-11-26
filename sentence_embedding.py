@@ -34,7 +34,7 @@ class Sentence_Embedding(object):
         u = U1[:, 0]
         u = u[:, None]
         self.sent_vec = self.sent_vec - np.dot(u, np.dot(u.T, self.sent_vec))
-        return
+        return self.sent_vec
 
     def get_w_vec(self, w):
         try:
@@ -101,15 +101,29 @@ def get_word_prob_from_corpus(fname):
     return out_dict
 
 
+def get_w_prob_from_csv(fname):
+    freqs = pd.read_csv(fname)
+    w_prob_dict = dict(zip(list(freqs['Word']), list(freqs['Probability'])))
+    # pdb.set_trace()
+    out_f = open('./data/w_prob_dict.pkl', 'wb')
+    pickle.dump(w_prob_dict, out_f)
+    out_f.close()
+    return
+
+
 def scrape_sentences():
     # doing only the hub part
-    top_dir = './data/vcc2018_training/Transcriptions/HUB/'
+    top_dir = './data/vcc2018_training/Transcriptions/'
+    # sentences = dict()
+    sub_dir = [top_dir + 'HUB/', top_dir + 'SPOKE/']
     sentences = []
-    for fname in os.listdir(top_dir)[2:]:
-        with open(top_dir + fname, 'r') as f:
-            sent = f.readline().split()
-            sent = ' '.join(sent)
-            sentences.append(sent)
+    for t in sub_dir:
+        for fname in os.listdir(t)[:]:
+            with open(t + fname, 'r') as f:
+                sent = f.readline().split()
+                sent = ' '.join(sent)
+                sentences.append(sent)
+            # sentences[fname] = sent
     return sentences
 
 
@@ -117,9 +131,19 @@ if __name__ == '__main__':
     freq_file = './data/word_freqencies.csv'
     wvec_file = './data/wiki_new.csv'
     sentences = scrape_sentences()
-    print(sentences[:3])
+    # pdb.set_trace()
+    # print(sentences[:3])
     # sentences.append('How are you')
     # sentences.append('I am fine')
     # sentences.append('I am good')
     s = Sentence_Embedding(freq_file, wvec_file)
-    s.embed_sent(sentences)
+    sent_vec = s.embed_sent(sentences)
+    # key_list = sentences.keys()
+    sent_emb = dict()
+    for i in range(sent_vec.shape[0]):
+        if i < 81:
+            sent_emb[str(i+10001) + '.wav'] = sent_vec[i]
+        else:
+            sent_emb[str(i - 81 + 20001) + '.wav'] = sent_vec[i]
+    with open('./data/sent_emb.pkl', 'wb') as f:
+        pickle.dump(sent_emb, f)

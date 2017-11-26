@@ -54,7 +54,7 @@ def main():
     # dirs = validate_log_dirs(args)
     # tf.gfile.MakeDirs(dirs['logdir'])
     dirs = dict()
-    dirs['logdir'] = '.'
+    dirs['logdir'] = './logdir'
     with open(args.architecture) as f:
         arch = json.load(f)
 
@@ -68,6 +68,7 @@ def main():
 
     image, label, text_emb = read_all(
         file_pattern=arch['training']['datadir'],
+        file_pattern2=arch['training']['textdir'],
         batch_size=arch['training']['batch_size'],
         capacity=2048,
         min_after_dequeue=1024,

@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 # from util.image import make_png_jet_thumbnail, make_png_thumbnail
 from trainer.gan import GANTrainer
-
+from tensorflow.python import debug as tf_debug
 
 class VAETrainer(GANTrainer):
     def _optimize(self):
@@ -290,6 +290,7 @@ class VAWGAN_S(GANTrainer):
             "logP": self.loss['logP'],
             "W_dist": self.loss['W_dist'],
             "gp": self.loss['gp'],
+            "l_T": self.loss['l_T'],
             "step": self.opt['global_step'],
         }
         result = sess.run(
@@ -308,5 +309,6 @@ class VAWGAN_S(GANTrainer):
         msg += 'log P(x|z, y) = {:.4e} '.format(result['logP'])
         msg += 'D_KL(z) = {:.4e} '.format(result['D_KL'])
         msg += 'GP = {:.4e} '.format(result['gp'])
+        msg += 'text_loss = {:.4e}'.format(result['l_T'])
         print('\r{}'.format(msg), end='', flush=True)
         logging.info(msg)
