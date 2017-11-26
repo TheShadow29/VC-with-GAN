@@ -29,11 +29,12 @@ class Sentence_Embedding(object):
                 w_vec = self.get_w_vec(w)
                 self.sent_vec[ind] += self.a/(self.a+self.get_w_prob(w)) * w_vec
             self.sent_vec[ind] /= len(words)
-        # self.sent_vec is X
-        U1, Sig1, V1 = np.linalg.svd(self.sent_vec, full_matrices=False)
+        # self.sent_vec.T is X
+        U1, Sig1, V1 = np.linalg.svd(self.sent_vec.T, full_matrices=False)
         u = U1[:, 0]
         u = u[:, None]
-        self.sent_vec = self.sent_vec - np.dot(u, np.dot(u.T, self.sent_vec))
+        # self.sent_vec = self.sent_vec - np.dot(u, np.dot(u.T, self.sent_vec))
+        self.sent_vec = self.sent_vec - np.dot(np.dot(self.sent_vec, u), u.T)
         return self.sent_vec
 
     def get_w_vec(self, w):
