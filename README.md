@@ -1,6 +1,7 @@
 # VC-with-GAN
 CS 753 ASR project
 
+
 # Usage Steps:
 1. Run `bash download.sh` to prepare the VCC2016 dataset.
 2. Run `analyzer.py` to extract features and write features into binary files. (This takes a few minutes.)
