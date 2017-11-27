@@ -1,6 +1,6 @@
 #!/bin/bash
-MODEL=ConvVAE
-CPKT=logdir/train/VAE2018/model.ckpt-42586
+MODEL=VAWGAN_S
+CPKT=logdir/train/vawgan_s_2018/model.ckpt-172705
 OPDIR="./logdir/$MODEL"
 
 source activate vcwgan

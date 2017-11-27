@@ -86,12 +86,20 @@ def main():
 
     machine = MODEL(arch)
     z = machine.encode(x)
-    x_t = machine.decode(z, y_t)  # NOTE: the API yields NHWC format
+    if args.model == 'VAWGAN_S':
+        t_enc = machine.text_encode(x)
+        x_t = machine.decode(z, y_t, t_enc)
+    else:
+        x_t = machine.decode(z, y_t)  # NOTE: the API yields NHWC format
     x_t = tf.squeeze(x_t)
     x_t = normalizer.backward_process(x_t)
 
     # For sanity check (validation)
-    x_s = machine.decode(z, y_s)
+    if args.model == 'VAWGAN_S':
+        t_enc = machine.text_encode(x)
+        x_s = machine.decode(z, y_s, t_enc)
+    else:
+        x_s = machine.decode(z, y_s)
     x_s = tf.squeeze(x_s)
     x_s = normalizer.backward_process(x_s)
 
