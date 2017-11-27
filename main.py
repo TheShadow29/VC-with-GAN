@@ -14,7 +14,7 @@ args = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string(
     'logdir_root', None, 'root of log dir')
 tf.app.flags.DEFINE_string(
-    'logdir', 'logdir', 'log dir')
+    'logdir', None, 'log dir')
 tf.app.flags.DEFINE_string(
     'restore_from', None, 'restore from dir (not from *.ckpt)')
 tf.app.flags.DEFINE_string('gpu_cfg', None, 'GPU configuration')
@@ -37,11 +37,11 @@ if args.model is None or args.trainer is None:
     )
 
 # print(args.model_module)
-module = import_module(args.model_module, package=None)
-MODEL = getattr(module, args.model)
+model_module = import_module(args.model_module, package=None)
+MODEL = getattr(model_module, args.model)
 
-module = import_module(args.trainer_module, package=None)
-TRAINER = getattr(module, args.trainer)
+trainer_module = import_module(args.trainer_module, package=None)
+TRAINER = getattr(trainer_module, args.trainer)
 # print(args.model_module)
 
 # MODEL = model.vae.VAWGAN
@@ -51,10 +51,10 @@ TRAINER = getattr(module, args.trainer)
 def main():
     """ NOTE: The input is rescaled to [-1, 1] """
 
-    # dirs = validate_log_dirs(args)
-    # tf.gfile.MakeDirs(dirs['logdir'])
-    dirs = dict()
-    dirs['logdir'] = '.'
+    dirs = validate_log_dirs(args)
+    tf.gfile.MakeDirs(dirs['logdir'])
+    # dirs = dict()
+    # dirs['logdir'] = '.'
     with open(args.architecture) as f:
         arch = json.load(f)
 
@@ -76,7 +76,10 @@ def main():
 
     machine = MODEL(arch)
 
-    loss = machine.loss(image, label, text_emb)
+    if model_module == 'VAWGAN_S':
+        loss = machine.loss(image, label, text_emb)
+    else:
+        loss = machine.loss(image, label)
     trainer = TRAINER(loss, arch, args, dirs)
     trainer.train(nIter=arch['training']['max_iter'], machine=machine)
 
