@@ -6,3 +6,4 @@ dependencies:
     - soundfile
     - librosa
     - pyworld
+    - pandas

@@ -148,18 +148,12 @@
     },
     "training": {
         "beta2": 0.999,
-        "datadir": [
-            "./dataset/vcc2018/bin/*/VCC2SF1/100*.bin",
-            "./dataset/vcc2018/bin/*/VCC2TM3/100*.bin"
-        ],
+        "datadir": ["./dataset/vcc2018/bin/Training Set/*/*.bin"],
         "batch_size": 16,
         "epoch": 200,
         "alpha": 50.0,
         "max_iter": 200000,
-        "textdir": [
-            "./dataset/vcc2018/bin/*/VCC2SF1/t_100*.bin",
-            "./dataset/vcc2018/bin/*/VCC2TM3/t_100*.bin"
-        ],
+        "textdir": ["./dataset/vcc2018/bin/Training Set/*/t_100*.bin"],
         "nIterD": 5,
         "lambda": 10,
         "lr": 0.0001,

@@ -4,7 +4,7 @@ import json
 import tensorflow as tf
 import numpy as np
 
-from analyzer import read_all, Tanhize
+from analyzer import read_all, Tanhize, read
 # load, configure_gpu_settings, restore_global_step
 # from analyzer import read, Tanhize
 from util.wrapper import save, validate_log_dirs
@@ -66,20 +66,29 @@ def main():
         xmin=np.fromfile('./etc/xmin.npf'),
     )
 
-    image, label, text_emb = read_all(
-        file_pattern=arch['training']['datadir'],
-        batch_size=arch['training']['batch_size'],
-        capacity=2048,
-        min_after_dequeue=1024,
-        normalizer=normalizer,
-    )
-
     machine = MODEL(arch)
-
     if model_module == 'VAWGAN_S':
+        image, label, text_emb = read_all(
+            file_pattern=arch['training']['datadir'],
+            file_pattern2=arch['training']['textdir'],
+            batch_size=arch['training']['batch_size'],
+            capacity=2048,
+            min_after_dequeue=1024,
+            normalizer=normalizer,
+        )
+
         loss = machine.loss(image, label, text_emb)
     else:
+        image, label = read(
+            file_pattern=arch['training']['datadir'],
+            batch_size=arch['training']['batch_size'],
+            capacity=2048,
+            min_after_dequeue=1024,
+            normalizer=normalizer,
+        )
+
         loss = machine.loss(image, label)
+
     trainer = TRAINER(loss, arch, args, dirs)
     trainer.train(nIter=arch['training']['max_iter'], machine=machine)
 

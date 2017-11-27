@@ -449,9 +449,9 @@ class VAWGAN_S(object):
         with tf.name_scope('loss'):
             z_mu, z_lv = self._encode(x)
             z = GaussianSampleLayer(z_mu, z_lv)
-            xh = self._generate(z, y, t)
 
             t_enc = self._text_encode(x)
+            xh = self._generate(z, y, t_enc)
 
             tx_loss = tf.reduce_mean(tf.nn.l2_loss(t_enc - t))
 

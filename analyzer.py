@@ -178,7 +178,6 @@ def read_all(
 
         files2 = tf.gfile.Glob(file_pattern2)
         filename_queue2 = tf.train.string_input_producer(files2)
-        # print(filename)
         reader2 = tf.FixedLengthRecordReader(300)
         _, value2 = reader2.read(filename_queue2)
         value2 = tf.decode_raw(value2, tf.float32)
@@ -195,6 +194,7 @@ def read_all(
         else:
             pass
         speaker = tf.cast(value[-1], tf.int64)
+
         # print(value2.shape)
         # tf_debug.
         # text_emb = tf.reshape(value2, [300])
