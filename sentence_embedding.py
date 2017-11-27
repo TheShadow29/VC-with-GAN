@@ -35,6 +35,8 @@ class Sentence_Embedding(object):
         u = u[:, None]
         # self.sent_vec = self.sent_vec - np.dot(u, np.dot(u.T, self.sent_vec))
         self.sent_vec = self.sent_vec - np.dot(np.dot(self.sent_vec, u), u.T)
+        self.sent_vec = (self.sent_vec - self.sent_vec.min()) / (self.sent_vec.max() - self.sent_vec.min())
+        self.sent_vec = self.sent_vec.astype(np.float32)
         return self.sent_vec
 
     def get_w_vec(self, w):
