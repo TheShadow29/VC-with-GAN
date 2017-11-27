@@ -23,6 +23,8 @@ FFT_SIZE = 1024
 SP_DIM = FFT_SIZE // 2 + 1
 FEAT_DIM = SP_DIM + SP_DIM + 1 + 1 + 1  # [sp, ap, f0, en, s]
 RECORD_BYTES = FEAT_DIM * 4  # all features saved in `float32`
+EMB_DIM = 300
+EMB_BYTES = EMB_DIM * 4
 
 
 def wav2pw(x, fs=16000, fft_size=FFT_SIZE):
@@ -178,7 +180,7 @@ def read_all(
 
         files2 = tf.gfile.Glob(file_pattern2)
         filename_queue2 = tf.train.string_input_producer(files2)
-        reader2 = tf.FixedLengthRecordReader(300)
+        reader2 = tf.FixedLengthRecordReader(EMB_BYTES)
         _, value2 = reader2.read(filename_queue2)
         value2 = tf.decode_raw(value2, tf.float32)
 
@@ -197,9 +199,9 @@ def read_all(
 
         # print(value2.shape)
         # tf_debug.
-        # text_emb = tf.reshape(value2, [300])
+        text_emb = tf.reshape(value2, [EMB_DIM, ])
         # changed_file_pattern = file_pattern.split('/')
-        text_emb = tf.random_uniform(shape=(300,))
+        # text_emb = tf.random_uniform(shape=(300,))
         # print(value)
         # pdb.set_trace()
         # pdb.set_trace()
