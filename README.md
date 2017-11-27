@@ -21,7 +21,7 @@ python convert.py \
 --src VCC2SF1 \
 --trg VCC2TM1 \
 --model VAWGAN \
---model_module model.vawgan \
+--module model.vawgan \
 --checkpoint logdir/train/[timestamp]/[model.ckpt-[id]] \
 --file_pattern "./dataset/vcc2018/bin/Training Set/{}/*.bin"
 ```  
