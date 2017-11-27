@@ -21,12 +21,12 @@ python convert.py \
 --src VCC2SF1 \
 --trg VCC2TM1 \
 --model VAWGAN \
---model_module model.vawgan \
+--module model.vawgan \
 --checkpoint logdir/train/[timestamp]/[model.ckpt-[id]] \
---file_pattern "./dataset/vcc2016/bin/Testing Set/{}/*.bin"
-```
-*Please fill in `timestamp` and `model id`.
-7. You can find the converted wav files in `./logdir/output/[timestamp]`
+--file_pattern "./dataset/vcc2018/bin/Training Set/{}/*.bin"
+```  
+*Please fill in `timestamp` and `model id`.  
+7. You can find the converted wav files in `./logdir/output/[timestamp]`  
 
 # Usage for Sentence Embeddings:
 1. Ensure you have `w_prob_dict.pkl` and `w_vec_dict.pkl` and carry out step 1 as above.
