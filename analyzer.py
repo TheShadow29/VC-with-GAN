@@ -8,6 +8,7 @@ import tensorflow as tf
 from tensorflow.python import debug as tf_debug
 
 import pdb
+import pickle
 
 args = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('dir_to_wav', './dataset/vcc2018/wav', 'Dir to *.wav')
@@ -49,8 +50,11 @@ def extract(filename, fft_size=FFT_SIZE, dtype=np.float32):
     return np.concatenate([sp, ap, f0, en], axis=1).astype(dtype)
 
 
-def extract_and_save_bin_to(dir_to_bin, dir_to_source):
+def extract_and_save_bin_to(dir_to_bin, dir_to_source, sent_vec_dict):
     sets = [s for s in os.listdir(dir_to_source) if s in SETS]
+    # print(sets)
+    # pdb.set_trace()
+    # sets is just training set
     for d in sets:
         path = join(dir_to_source, d)
         speakers = [s for s in os.listdir(path) if s in SPEAKERS]
@@ -69,9 +73,13 @@ def extract_and_save_bin_to(dir_to_bin, dir_to_source):
                         np.float32,
                     )
                     b = os.path.splitext(f)[0]
+                    text_emb = sent_vec_dict[f]
+                    # pdb.set_trace()
                     features = np.concatenate([features, labels], 1)
                     with open(join(output_dir, '{}.bin'.format(b)), 'wb') as fp:
                         fp.write(features.tostring())
+                    with open(join(output_dir, 't_{}.bin'.format(b)), 'wb') as tp:
+                        tp.write(text_emb.tostring())
 
 
 class Tanhize(object):
@@ -142,6 +150,7 @@ def read(
 
 def read_all(
         file_pattern,
+        file_pattern2,
         batch_size,
         record_bytes=RECORD_BYTES,
         capacity=256,
@@ -167,16 +176,29 @@ def read_all(
         value = tf.reshape(value, [FEAT_DIM, ])
         feature = value[:SP_DIM]  # NCHW format
 
+        files2 = tf.gfile.Glob(file_pattern2)
+        filename_queue2 = tf.train.string_input_producer(files2)
+        # print(filename)
+        reader2 = tf.FixedLengthRecordReader(300)
+        _, value2 = reader2.read(filename_queue2)
+        value2 = tf.decode_raw(value2, tf.float32)
+
         if normalizer is not None:
             feature = normalizer.forward_process(feature)
 
         if format == 'NCHW':
             feature = tf.reshape(feature, [1, SP_DIM, 1])
+            # text_emb = tf.reshape(value2, [1, 300, 1])
         elif format == 'NHWC':
             feature = tf.reshape(feature, [SP_DIM, 1, 1])
+            # text_emb = tf.reshape(value2, [300, 1, 1])
         else:
             pass
         speaker = tf.cast(value[-1], tf.int64)
+        # print(value2.shape)
+        # tf_debug.
+        # text_emb = tf.reshape(value2, [300])
+        # changed_file_pattern = file_pattern.split('/')
         text_emb = tf.random_uniform(shape=(300,))
         # print(value)
         # pdb.set_trace()
@@ -244,7 +266,10 @@ def pw2wav(features, feat_dim=513, fs=16000):
 
 
 if __name__ == '__main__':
+    with open('./data/sent_emb.pkl', 'rb') as f:
+        sent_vec_dict = pickle.load(f)
     extract_and_save_bin_to(
         args.dir_to_bin,
         args.dir_to_wav,
+        sent_vec_dict,
     )
