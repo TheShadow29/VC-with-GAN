@@ -18,7 +18,7 @@ tf.app.flags.DEFINE_string('trg', 'VCC2TM1', 'target speaker [VCC2SF1 - VCC2TM2]
 tf.app.flags.DEFINE_string('output_dir', './logdir', 'root of output dir')
 tf.app.flags.DEFINE_string('module', 'model.vae', 'Module')
 tf.app.flags.DEFINE_string('model', None, 'Model')
-tf.app.flags.DEFINE_string('file_pattern', './dataset/vcc2018/bin/Training Set/{}/*.bin', 'file pattern')
+tf.app.flags.DEFINE_string('file_pattern', './dataset/vcc2018/bin/Training Set/{}/[0-9]*.bin', 'file pattern')
 
 if args.model is None:
     raise ValueError(
