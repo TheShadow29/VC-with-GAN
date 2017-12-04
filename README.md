@@ -44,7 +44,7 @@ python convert.py \
 python main.py \
 --model VAWGAN_S \
 --trainer VAWGAN_S \
---architecture-vawgan-sent.json
+--architecture architecture-vawgan-sent.json
 ```
 5. For conversion, run
 ```bash

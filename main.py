@@ -67,7 +67,7 @@ def main():
     )
 
     machine = MODEL(arch)
-    if args.model == 'VAWGAN_S':
+    if args.model in ['VAWGAN_S', 'SentWGAN']:
         image, label, text_emb = read_all(
             file_pattern=arch['training']['datadir'],
             file_pattern2=arch['training']['textdir'],
