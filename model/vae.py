@@ -682,8 +682,8 @@ class SentWGAN(object):
         tf.summary.histogram('x', x)
         return loss
 
-    def decode(self, z, y, t):
-        xh = self._generate(z, y, t)
+    def decode(self, z, y):
+        xh = self._generate(z, y)
         return nchw_to_nhwc(xh)
 
     def discriminate(self, x):

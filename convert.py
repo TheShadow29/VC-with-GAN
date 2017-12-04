@@ -85,11 +85,16 @@ def main():
     y_t = y_t_id * tf.ones(shape=[tf.shape(x)[0], ], dtype=tf.int64)
 
     machine = MODEL(arch)
-    z = machine.encode(x)
+
     if args.model == 'VAWGAN_S':
+        z = machine.encode(x)
         t_enc = machine.text_encode(x)
         x_t = machine.decode(z, y_t, t_enc)
+    elif args.model == 'SentWGAN':
+        t_enc = machine.text_encode(x)
+        x_t = machine.decode(t_enc, y_t)
     else:
+        z = machine.encode(x)
         x_t = machine.decode(z, y_t)  # NOTE: the API yields NHWC format
     x_t = tf.squeeze(x_t)
     x_t = normalizer.backward_process(x_t)
@@ -98,6 +103,9 @@ def main():
     if args.model == 'VAWGAN_S':
         t_enc = machine.text_encode(x)
         x_s = machine.decode(z, y_s, t_enc)
+    elif args.model == 'SentWGAN':
+        t_enc = machine.text_encode(x)
+        x_s = machine.decode(t_enc, y_s)
     else:
         x_s = machine.decode(z, y_s)
     x_s = tf.squeeze(x_s)
