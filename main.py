@@ -64,10 +64,21 @@ def main():
     normalizer = Tanhize(
         xmax=np.fromfile('./etc/xmax.npf'),
         xmin=np.fromfile('./etc/xmin.npf'),
-    )
+    )   
 
     machine = MODEL(arch)
-    if args.model in ['VAWGAN_S', 'SentWGAN']:
+    if args.model in ['VAWGAN_I']:
+        image, label, text_emb = read_all(
+            file_pattern=arch['training']['datadir'],
+            file_pattern2=arch['training']['ivectordir'],
+            batch_size=arch['training']['batch_size'],
+            capacity=2048,
+            min_after_dequeue=1024,
+            normalizer=normalizer,
+        )
+
+        loss = machine.loss(image, label, text_emb)
+    elif args.model in ['VAWGAN_S', 'SentWGAN']:
         image, label, text_emb = read_all(
             file_pattern=arch['training']['datadir'],
             file_pattern2=arch['training']['textdir'],
