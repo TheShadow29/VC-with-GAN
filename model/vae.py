@@ -694,6 +694,7 @@ class SentWGAN(object):
         t_enc = self._text_encode(x)
         return t_enc
 
+
 class VAWGAN_I(object):
     def __init__(self, arch, is_training=False):
         '''
@@ -759,7 +760,7 @@ class VAWGAN_I(object):
         return embeddings
 
     def _encoder(self, x, is_training=None):
-        net = self.arch['encoder']                          
+        net = self.arch['encoder']
 
         for i, (o, k, s) in enumerate(zip(net['output'], net['kernel'], net['stride'])):
             x = conv2d_nchw_layernorm(
@@ -771,15 +772,16 @@ class VAWGAN_I(object):
         z_lv = tf.layers.dense(x, self.arch['z_dim'])
         return z_mu, z_lv
 
-    def _generator(self, z, y, is_training=None):
+    def _generator(self, z, y, i_vec, is_training=None):
         net = self.arch['generator']
         h, w, c = net['hwc']
 
         if y is not None:
             y = tf.nn.embedding_lookup(self.y_emb, y)
-            x = self._merge([z, y], h * w * c)
+            x = self._merge([z, y, i_vec], h * w * c)
         else:
-            x = z
+            # x = z
+            x = self._merge([z, i_vec], h * w * c)
 
         x = tf.reshape(x, [-1, c, h, w])  # channel first
         for i, (o, k, s) in enumerate(zip(net['output'], net['kernel'], net['stride'])):
@@ -792,6 +794,27 @@ class VAWGAN_I(object):
                 x = lrelu(x)
         return x
 
+    # def _generator(self, z, y, is_training=None):
+    #     net = self.arch['generator']
+    #     h, w, c = net['hwc']
+
+    #     if y is not None:
+    #         y = tf.nn.embedding_lookup(self.y_emb, y)
+    #         x = self._merge([z, y], h * w * c)
+    #     else:
+    #         x = z
+
+    #     x = tf.reshape(x, [-1, c, h, w])  # channel first
+    #     for i, (o, k, s) in enumerate(zip(net['output'], net['kernel'], net['stride'])):
+    #         x = tf.layers.conv2d_transpose(x, o, k, s,
+    #                                        padding='same',
+    #                                        data_format='channels_first',
+    #                                        )
+    #         if i < len(net['output']) - 1:
+    #             x = Layernorm(x, [1, 2, 3], 'ConvT-LN{}'.format(i))
+    #             x = lrelu(x)
+    #     return x
+
     def _discriminator(self, x, is_training=None):
         net = self.arch['discriminator']
         for i, (o, k, s) in enumerate(zip(net['output'], net['kernel'], net['stride'])):
@@ -803,11 +826,11 @@ class VAWGAN_I(object):
         d = tf.layers.dense(x, 1)
         return d
 
-    def loss(self, x, y):
+    def loss(self, x, y, i_vec):
         with tf.name_scope('loss'):
             z_mu, z_lv = self._encode(x)
             z = GaussianSampleLayer(z_mu, z_lv)
-            xh = self._generate(z, y)
+            xh = self._generate(z, y, i_vec)
 
             D_KL = tf.reduce_mean(
                 GaussianKLD(

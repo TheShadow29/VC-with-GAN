@@ -4,7 +4,7 @@ import json
 import tensorflow as tf
 import numpy as np
 
-from analyzer import read_all, Tanhize, read
+from analyzer import read_i_all, read_all, Tanhize, read
 # load, configure_gpu_settings, restore_global_step
 # from analyzer import read, Tanhize
 from util.wrapper import save, validate_log_dirs
@@ -64,11 +64,11 @@ def main():
     normalizer = Tanhize(
         xmax=np.fromfile('./etc/xmax.npf'),
         xmin=np.fromfile('./etc/xmin.npf'),
-    )   
+    )
 
     machine = MODEL(arch)
     if args.model in ['VAWGAN_I']:
-        image, label, text_emb = read_all(
+        image, label, i_vec = read_i_all(
             file_pattern=arch['training']['datadir'],
             file_pattern2=arch['training']['ivectordir'],
             batch_size=arch['training']['batch_size'],
@@ -77,7 +77,8 @@ def main():
             normalizer=normalizer,
         )
 
-        loss = machine.loss(image, label, text_emb)
+        # loss = machine.loss(image, label, text_emb)
+        loss = machine.loss(image, label, i_vec)
     elif args.model in ['VAWGAN_S', 'SentWGAN']:
         image, label, text_emb = read_all(
             file_pattern=arch['training']['datadir'],
@@ -102,6 +103,7 @@ def main():
 
     trainer = TRAINER(loss, arch, args, dirs)
     trainer.train(nIter=arch['training']['max_iter'], machine=machine)
+
 
 if __name__ == '__main__':
     main()

@@ -25,6 +25,8 @@ FEAT_DIM = SP_DIM + SP_DIM + 1 + 1 + 1  # [sp, ap, f0, en, s]
 RECORD_BYTES = FEAT_DIM * 4  # all features saved in `float32`
 EMB_DIM = 300
 EMB_BYTES = EMB_DIM * 4
+IVEC_DIM = 100
+IVEC_BYTES = IVEC_DIM * 4
 
 
 def wav2pw(x, fs=16000, fft_size=FFT_SIZE):
@@ -52,7 +54,7 @@ def extract(filename, fft_size=FFT_SIZE, dtype=np.float32):
     return np.concatenate([sp, ap, f0, en], axis=1).astype(dtype)
 
 
-def extract_and_save_bin_to(dir_to_bin, dir_to_source, sent_vec_dict):
+def extract_and_save_bin_to(dir_to_bin, dir_to_source, sent_vec_dict, i_vec_dict):
     sets = [s for s in os.listdir(dir_to_source) if s in SETS]
     # print(sets)
     # pdb.set_trace()
@@ -77,11 +79,15 @@ def extract_and_save_bin_to(dir_to_bin, dir_to_source, sent_vec_dict):
                     b = os.path.splitext(f)[0]
                     text_emb = sent_vec_dict[f]
                     # pdb.set_trace()
+                    i_vec = i_vec_dict[s]
+                    # pdb.set_trace()
                     features = np.concatenate([features, labels], 1)
                     with open(join(output_dir, '{}.bin'.format(b)), 'wb') as fp:
                         fp.write(features.tostring())
                     with open(join(output_dir, 't_{}.bin'.format(b)), 'wb') as tp:
                         tp.write(text_emb.tostring())
+                    with open(join(output_dir, 'i_{}.bin'.format(b)), 'wb') as ip:
+                        ip.write(i_vec.tostring())
 
 
 class Tanhize(object):
@@ -216,6 +222,72 @@ def read_all(
         )
 
 
+def read_i_all(
+        file_pattern,
+        file_pattern2,
+        batch_size,
+        record_bytes=RECORD_BYTES,
+        capacity=256,
+        min_after_dequeue=128,
+        num_threads=8,
+        format='NCHW',
+        normalizer=None,
+):
+    '''
+    Read only `sp` and `speaker`
+    Return:
+        `feature`: [b, c]
+        `speaker`: [b,]
+    '''
+    with tf.name_scope('InputSpectralFrame'):
+        files = tf.gfile.Glob(file_pattern)
+        filename_queue = tf.train.string_input_producer(files)
+
+        reader = tf.FixedLengthRecordReader(record_bytes)
+        _, value = reader.read(filename_queue)
+        value = tf.decode_raw(value, tf.float32)
+
+        value = tf.reshape(value, [FEAT_DIM, ])
+        feature = value[:SP_DIM]  # NCHW format
+
+        files2 = tf.gfile.Glob(file_pattern2)
+        filename_queue2 = tf.train.string_input_producer(files2)
+        reader2 = tf.FixedLengthRecordReader(EMB_BYTES)
+        _, value2 = reader2.read(filename_queue2)
+        value2 = tf.decode_raw(value2, tf.float32)
+
+        if normalizer is not None:
+            feature = normalizer.forward_process(feature)
+
+        if format == 'NCHW':
+            feature = tf.reshape(feature, [1, SP_DIM, 1])
+            # text_emb = tf.reshape(value2, [1, 300, 1])
+        elif format == 'NHWC':
+            feature = tf.reshape(feature, [SP_DIM, 1, 1])
+            # text_emb = tf.reshape(value2, [300, 1, 1])
+        else:
+            pass
+        speaker = tf.cast(value[-1], tf.int64)
+
+        # print(value2.shape)
+        # tf_debug.
+        text_emb = tf.reshape(value2, [EMB_DIM, ])
+        # changed_file_pattern = file_pattern.split('/')
+        # text_emb = tf.random_uniform(shape=(300,))
+        # print(value)
+        # pdb.set_trace()
+        # pdb.set_trace()
+        # tf_debug.LocalCLIDebugWrapperSession(sess)
+        return tf.train.shuffle_batch(
+            [feature, speaker, text_emb],
+            batch_size,
+            capacity=capacity,
+            min_after_dequeue=min_after_dequeue,
+            num_threads=num_threads,
+            # enqueue_many=True,
+        )
+
+
 def read_whole_features(file_pattern, num_epochs=1):
     """
     Return
@@ -270,8 +342,11 @@ def pw2wav(features, feat_dim=513, fs=16000):
 if __name__ == '__main__':
     with open('./data/sent_emb.pkl', 'rb') as f:
         sent_vec_dict = pickle.load(f)
+    with open('./data/i_vec_dict.pkl', 'rb') as g:
+        i_vec_dict = pickle.load(g)
     extract_and_save_bin_to(
         args.dir_to_bin,
         args.dir_to_wav,
         sent_vec_dict,
+        i_vec_dict,
     )
