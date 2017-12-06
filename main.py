@@ -103,6 +103,5 @@ def main():
     trainer = TRAINER(loss, arch, args, dirs)
     trainer.train(nIter=arch['training']['max_iter'], machine=machine)
 
-
 if __name__ == '__main__':
     main()

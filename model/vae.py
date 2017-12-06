@@ -720,10 +720,6 @@ class VAWGAN_I(object):
             'Encoder',
             self._encoder)
 
-        self._text_encode = tf.make_template(
-            'TextE',
-            self._text_encoder)
-
         self._discriminate = tf.make_template(
             'Discriminator',
             self._discriminator)
@@ -731,7 +727,7 @@ class VAWGAN_I(object):
         self.generate = self.decode  # for VAE-GAN extension
 
     def _sanity_check(self):
-        for net in ['encoder', 'text_encoder', 'generator']:
+        for net in ['encoder', 'generator']:
             assert len(self.arch[net]['output']) == len(self.arch[net]['kernel']) == len(self.arch[net]['stride'])
 
     def _unit_embedding(self, n_class, h_dim, scope_name, var_name='y_emb'):
@@ -763,7 +759,8 @@ class VAWGAN_I(object):
         return embeddings
 
     def _encoder(self, x, is_training=None):
-        net = self.arch['encoder']
+        net = self.arch['encoder']                          
+
         for i, (o, k, s) in enumerate(zip(net['output'], net['kernel'], net['stride'])):
             x = conv2d_nchw_layernorm(
                 x, o, k, s, lrelu,
@@ -774,28 +771,15 @@ class VAWGAN_I(object):
         z_lv = tf.layers.dense(x, self.arch['z_dim'])
         return z_mu, z_lv
 
-    def _text_encoder(self, x, is_training=None):
-        net = self.arch['text_encoder']
-        for i, (o, k, s) in enumerate(zip(net['output'], net['kernel'], net['stride'])):
-            x = conv2d_nchw_layernorm(
-                x, o, k, s, lrelu,
-                name='Conv2d-{}'.format(i)
-            )
-        x = slim.flatten(x)
-        t_enc = tf.layers.dense(x, self.arch['sent_dim'])
-        # t_lv = tf.layers.dense(x, self.arch['sent_dim'])
-        return t_enc
-
-    def _generator(self, z, y, t, is_training=None):
+    def _generator(self, z, y, is_training=None):
         net = self.arch['generator']
         h, w, c = net['hwc']
 
         if y is not None:
             y = tf.nn.embedding_lookup(self.y_emb, y)
-            x = self._merge([z, y, t], h * w * c)
+            x = self._merge([z, y], h * w * c)
         else:
-            # x = z
-            x = self._merge([z, t], h * w * c)
+            x = z
 
         x = tf.reshape(x, [-1, c, h, w])  # channel first
         for i, (o, k, s) in enumerate(zip(net['output'], net['kernel'], net['stride'])):
@@ -819,16 +803,11 @@ class VAWGAN_I(object):
         d = tf.layers.dense(x, 1)
         return d
 
-    def loss(self, x, y, t):
-        # t is the sentence embeddings (actual values)
+    def loss(self, x, y):
         with tf.name_scope('loss'):
             z_mu, z_lv = self._encode(x)
             z = GaussianSampleLayer(z_mu, z_lv)
-
-            t_enc = self._text_encode(x)
-            xh = self._generate(z, y, t_enc)
-
-            tx_loss = tf.reduce_mean(tf.nn.l2_loss(t_enc - t))
+            xh = self._generate(z, y)
 
             D_KL = tf.reduce_mean(
                 GaussianKLD(
@@ -866,7 +845,6 @@ class VAWGAN_I(object):
         loss = dict()
         alpha = self.arch['training']['alpha']
         loss['l_E'] = -logPx + D_KL
-        loss['l_T'] = tx_loss
         loss['D_KL'] = D_KL
         loss['logP'] = logPx
         loss['l_D'] = -W_dist + gp
@@ -878,7 +856,7 @@ class VAWGAN_I(object):
         tf.summary.scalar('logPx', logPx)
         tf.summary.scalar('W_dist', W_dist)
         tf.summary.scalar("gp_loss", gradient_penalty)
-        tf.summary.scalar('text_loss', tx_loss)
+
         tf.summary.histogram('xh', xh)
         tf.summary.histogram('x', x)
         return loss
@@ -887,14 +865,10 @@ class VAWGAN_I(object):
         z_mu, _ = self._encode(x)
         return z_mu
 
-    def decode(self, z, y, t):
-        xh = self._generate(z, y, t)
+    def decode(self, z, y):
+        xh = self._generate(z, y)
         return nchw_to_nhwc(xh)
 
     def discriminate(self, x):
         dw = self._discriminate(x)
         return dw
-
-    def text_encode(self, x):
-        t_enc = self._text_encode(x)
-        return t_enc
