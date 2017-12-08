@@ -888,8 +888,8 @@ class VAWGAN_I(object):
         z_mu, _ = self._encode(x)
         return z_mu
 
-    def decode(self, z, y):
-        xh = self._generate(z, y)
+    def decode(self, z, y, i_vec):
+        xh = self._generate(z, y, i_vec)
         return nchw_to_nhwc(xh)
 
     def discriminate(self, x):

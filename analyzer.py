@@ -252,7 +252,7 @@ def read_i_all(
 
         files2 = tf.gfile.Glob(file_pattern2)
         filename_queue2 = tf.train.string_input_producer(files2)
-        reader2 = tf.FixedLengthRecordReader(EMB_BYTES)
+        reader2 = tf.FixedLengthRecordReader(IVEC_BYTES)
         _, value2 = reader2.read(filename_queue2)
         value2 = tf.decode_raw(value2, tf.float32)
 
@@ -271,7 +271,7 @@ def read_i_all(
 
         # print(value2.shape)
         # tf_debug.
-        text_emb = tf.reshape(value2, [EMB_DIM, ])
+        i_vec = tf.reshape(value2, [IVEC_DIM, ])
         # changed_file_pattern = file_pattern.split('/')
         # text_emb = tf.random_uniform(shape=(300,))
         # print(value)
@@ -279,7 +279,7 @@ def read_i_all(
         # pdb.set_trace()
         # tf_debug.LocalCLIDebugWrapperSession(sess)
         return tf.train.shuffle_batch(
-            [feature, speaker, text_emb],
+            [feature, speaker, i_vec],
             batch_size,
             capacity=capacity,
             min_after_dequeue=min_after_dequeue,
@@ -309,6 +309,16 @@ def read_whole_features(file_pattern, num_epochs=1):
         'speaker': tf.cast(value[:, SP_DIM * 2 + 2], tf.int64),
         'filename': key,
     }
+
+
+def read_i_vec(file_pattern, num_epochs=1):
+    files = tf.gfile.Glob(file_pattern)
+    filename_queue = tf.train.string_input_producer(files, num_epochs=num_epochs)
+    reader = tf.WholeFileReader()
+    key, value = reader.read(filename_queue)
+    value = tf.decode_raw(value, tf.float32)
+    value = tf.reshape(value, [-1, IVEC_DIM])
+    return value
 
 
 def pw2wav(features, feat_dim=513, fs=16000):

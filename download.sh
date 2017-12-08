@@ -16,3 +16,7 @@ unzip vcc2018_training.zip
 mv vcc2018_training "./vcc2018/wav/Training Set"
 rm vcc2018_training.zip
 cd ..
+mkdir -p data
+cd data
+wget "https://github.com/mozilla/DeepSpeech/releases/download/v0.1.0/deepspeech-0.1.0-models.tar.gz"
+tar xf "deepspeech-0.1.0-models.tar.gz"

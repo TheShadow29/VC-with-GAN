@@ -6,7 +6,7 @@ import numpy as np
 import soundfile as sf
 
 from util.wrapper import load
-from analyzer import read_whole_features, SPEAKERS, pw2wav
+from analyzer import read_whole_features, SPEAKERS, pw2wav, read_i_vec
 from analyzer import Tanhize
 from datetime import datetime
 from importlib import import_module
@@ -19,6 +19,7 @@ tf.app.flags.DEFINE_string('output_dir', './logdir', 'root of output dir')
 tf.app.flags.DEFINE_string('module', 'model.vae', 'Module')
 tf.app.flags.DEFINE_string('model', None, 'Model')
 tf.app.flags.DEFINE_string('file_pattern', './dataset/vcc2018/bin/Training Set/{}/[0-9]*.bin', 'file pattern')
+tf.app.flags.DEFINE_string('file_pattern2', './dataset/vcc2018/bin/Training Set/{}/i_*.bin', 'file pattern2')
 
 if args.model is None:
     raise ValueError(
@@ -30,7 +31,8 @@ model_module = import_module(args.module, package=None)
 MODEL = getattr(model_module, args.model)
 
 FS = 16000
-
+IVEC_DIM = 100
+IVEC_BYTES = IVEC_DIM * 4
 
 def make_output_wav_name(output_dir, filename):
     basename = str(filename, 'utf8')
@@ -83,6 +85,8 @@ def main():
     y_s = features['speaker']
     y_t_id = tf.placeholder(dtype=tf.int64, shape=[1, ])
     y_t = y_t_id * tf.ones(shape=[tf.shape(x)[0], ], dtype=tf.int64)
+    i_vec_s = read_i_vec(args.file_pattern2.format(args.src))
+    i_vec_t = read_i_vec(args.file_pattern2.format(args.trg))
 
     machine = MODEL(arch)
 
@@ -93,6 +97,9 @@ def main():
     elif args.model == 'SentWGAN':
         t_enc = machine.text_encode(x)
         x_t = machine.decode(t_enc, y_t)
+    elif args.model == 'VAWGAN_I':
+        z = machine.encode(x)
+        x_t = machine.decode(z, y_t, i_vec_t)
     else:
         z = machine.encode(x)
         x_t = machine.decode(z, y_t)  # NOTE: the API yields NHWC format
@@ -106,6 +113,9 @@ def main():
     elif args.model == 'SentWGAN':
         t_enc = machine.text_encode(x)
         x_s = machine.decode(t_enc, y_s)
+    elif args.model == 'VAWGAN_I':
+        z = machine.encode(x)
+        x_s = machine.decode(z, y_s, i_vec_s)
     else:
         x_s = machine.decode(z, y_s)
     x_s = tf.squeeze(x_s)

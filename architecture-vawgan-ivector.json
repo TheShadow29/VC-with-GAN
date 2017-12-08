@@ -28,7 +28,7 @@
 		"l2-reg": 1e-6
 	},
 	"training": {
-		"datadir": ["./dataset/vcc2018/bin/Training Set/*/*.bin"],
+		"datadir": ["./dataset/vcc2018/bin/Training Set/*/[0-9]*.bin"],
 		"ivectordir": ["./dataset/vcc2018/bin/Training Set/*/i_*.bin"],
 		"batch_size": 16,
 		"epoch": 200,
