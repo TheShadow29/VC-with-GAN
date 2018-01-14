@@ -17,7 +17,7 @@ tf.app.flags.DEFINE_integer('fs', 16000, 'Global sampling frequency')
 tf.app.flags.DEFINE_float('f0_ceil', 500, 'Global f0 ceiling')
 
 EPSILON = 1e-10
-SETS = ['Training Set']
+SETS = ['Evaluation Set']
 SPEAKERS = [s.strip() for s in tf.gfile.GFile('./etc/speakers.tsv', 'r').readlines()]
 FFT_SIZE = 1024
 SP_DIM = FFT_SIZE // 2 + 1
@@ -77,15 +77,15 @@ def extract_and_save_bin_to(dir_to_bin, dir_to_source, sent_vec_dict, i_vec_dict
                         np.float32,
                     )
                     b = os.path.splitext(f)[0]
-                    text_emb = sent_vec_dict[f]
+                    # text_emb = sent_vec_dict[f]
                     # pdb.set_trace()
                     i_vec = i_vec_dict[s]
                     # pdb.set_trace()
                     features = np.concatenate([features, labels], 1)
                     with open(join(output_dir, '{}.bin'.format(b)), 'wb') as fp:
                         fp.write(features.tostring())
-                    with open(join(output_dir, 't_{}.bin'.format(b)), 'wb') as tp:
-                        tp.write(text_emb.tostring())
+                    # with open(join(output_dir, 't_{}.bin'.format(b)), 'wb') as tp:
+                    #     tp.write(text_emb.tostring())
                     with open(join(output_dir, 'i_{}.bin'.format(b)), 'wb') as ip:
                         ip.write(i_vec.tostring())
 
