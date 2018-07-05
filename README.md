@@ -34,7 +34,12 @@ python convert.py \
 ```  
 
 # Usage for Sentence Embeddings:
-1. Ensure you have `w_prob_dict.pkl` and `w_vec_dict.pkl` in `data` directory.
+1. Ensure you have `w_prob_dict.pkl` and `w_vec_dict.pkl` in `data` directory. 
+    1. For `w_prob_dict.pkl` you have two options. Either use `get_word_prob_from_corpus` this demands a corpus as an input. We used WikiText. Or you can get a csv file with unigram probabilities (we mentioned the source in the report http://norvig.com/ngrams/) and use the function get_w_prob_from_csv.
+    2. For `w_vec_dict.pkl initialize` a Sentence_Embedding object and then call the function `prune_word_vec`. This essentially keeps only those embeddings which are present in the transcriptions since it takes a lot more time (and ram) to get the parse the whole fasttext data.
+    3. All pickle files are shared here https://drive.google.com/drive/folders/1FWGGEQ9wTUewBDFq5ssT4BP4cMyt8lh1
+
+
 2. Download the dataset using `bash download.sh`
 3. Run `python sentence_embedding.py`. This should create `sent_emb.pkl` inside `data` directory.
 4. Run `analyzer.py` to extract features, store them along with sentence embeddings.
